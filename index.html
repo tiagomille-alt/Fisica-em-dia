@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2563eb">
+  <title>FÍSICA EM DIA</title>
+  
+  <!-- Configuração do MathJax v3 -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    /* VARIÁVEIS DE CORES - MODO CLARO (PADRÃO) */
+    :root {
+      --bg-body: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.82);
+      --card-subtle-bg: rgba(248, 250, 252, 0.7);
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: rgba(226, 232, 240, 0.8);
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --input-bg: rgba(255, 255, 255, 0.9);
+      --option-hover: rgba(241, 245, 249, 0.9);
+      --shadow-color: rgba(15, 23, 42, 0.08);
+      --particle-color: 37, 99, 235;
+    }
+
+    /* VARIÁVEIS DE CORES - MODO ESCURO */
+    body.dark-mode {
+      --bg-body: #050811;
+      --card-bg: rgba(15, 23, 42, 0.82);
+      --card-subtle-bg: rgba(30, 41, 59, 0.7);
+      --primary: #3b82f6;
+      --primary-hover: #60a5fa;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: rgba(51, 65, 85, 0.8);
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --input-bg: rgba(15, 23, 42, 0.9);
+      --option-hover: rgba(30, 41, 59, 0.9);
+      --shadow-color: rgba(0, 0, 0, 0.4);
+      --particle-color: 96, 165, 250;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom);
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* CANVAS DE ANIMAÇÃO DE FÍSICA */
+    #physics-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .screen, .modal-overlay {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* NAVBAR FIXA COM PERFIL */
+    .navbar {
+      position: relative;
+      /* z-index bem maior que o do .screen: garante que o dropdown do
+         perfil (filho da navbar) sempre fique NA FRENTE da área de
+         questões, nunca atrás dela */
+      z-index: 50;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 36px;
+      padding-top: max(16px, env(safe-area-inset-top));
+      padding-left: max(36px, env(safe-area-inset-left));
+      padding-right: max(36px, env(safe-area-inset-right));
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px var(--shadow-color);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 1.3rem;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .theme-toggle-btn {
+      background: var(--card-subtle-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle-btn:hover {
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .profile-area { position: relative; }
+
+    .avatar-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: white;
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 2px solid var(--card-bg);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+      transition: transform 0.2s ease;
+    }
+
+    .avatar-btn:hover { transform: scale(1.05); }
+
+    .dropdown-menu {
+      position: absolute;
+      right: 0;
+      top: 54px;
+      width: 290px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      box-shadow: 0 12px 30px -5px var(--shadow-color);
+      display: none;
+      flex-direction: column;
+      z-index: 999;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+    }
+
+    .dropdown-menu.active { display: flex; }
+
+    .user-header {
+      padding: 18px;
+      background: var(--card-subtle-bg);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .user-header .name { font-weight: 700; color: var(--text-main); font-size: 0.95rem; }
+    .user-header .email { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+    .stats-summary {
+      padding: 16px;
+      display: flex;
+      justify-content: space-around;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .stat-item { text-align: center; }
+    .stat-item .val { font-weight: 800; font-size: 1.25rem; }
+    .stat-item .lbl { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+
+    .dropdown-item {
+      padding: 14px 18px;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: 0.88rem;
+      transition: background 0.15s;
+    }
+
+    .dropdown-item:hover { background-color: var(--card-subtle-bg); }
+    .dropdown-item.logout { color: var(--danger); border-top: 1px solid var(--border-color); }
+
+    .screen {
+      display: none;
+      width: 100%;
+      max-width: 1000px;
+      margin: 32px auto;
+      padding: 0 20px;
+    }
+
+    .screen.active { display: block; }
+
+    .auth-card {
+      background: var(--card-bg);
+      padding: 44px;
+      border-radius: 24px;
+      border: 1px solid var(--border-color);
+      max-width: 440px;
+      margin: 50px auto;
+      text-align: center;
+      box-shadow: 0 12px 32px -8px var(--shadow-color);
+      backdrop-filter: blur(16px);
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      outline: none;
+      font-size: 0.95rem;
+      background: var(--input-bg);
+      color: var(--text-main);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn-submit-user {
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-submit-user:hover { background: var(--primary-hover); }
+
+    .error-msg {
+      display: none;
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--danger);
+      font-size: 0.85rem;
+      margin-top: 16px;
+      line-height: 1.4;
+    }
+
+    .container-questoes {
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 36px 44px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 10px 30px -10px var(--shadow-color);
+      backdrop-filter: blur(16px);
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    .top-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .header-title-area {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .header-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .search-filters-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input {
+      padding: 10px 36px 10px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      font-size: 0.88rem;
+      outline: none;
+      width: 220px;
+      transition: all 0.2s;
+      background: var(--input-bg);
+      color: var(--text-main);
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 12px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+
+    .select-dificuldade {
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      outline: none;
+      background-color: var(--input-bg);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .select-dificuldade:focus {
+      border-color: var(--primary);
+    }
+
+    .btn-filter {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-filter:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+
+    .topic-title {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+    }
+
+    .meta-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-counter {
+      background: var(--card-subtle-bg);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+    }
+
+    .badge-source {
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--primary);
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .question-info-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .tag-info {
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tag-assunto {
+      background: var(--card-subtle-bg);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .tag-nivel-facil {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      border: 1px solid var(--success);
+    }
+
+    .tag-nivel-medio {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning);
+      border: 1px solid var(--warning);
+    }
+
+    .tag-nivel-dificil {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid var(--danger);
+    }
+
+    .question-statement {
+      font-size: 1.05rem;
+      line-height: 1.65;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 30px;
+      max-width: 100%;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .options-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 32px;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: flex-start;
+      padding: 16px 20px;
+      border: 1.5px solid var(--border-color);
+      border-radius: 16px;
+      background: var(--input-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .option-row:hover {
+      border-color: var(--primary);
+      background: var(--option-hover);
+      transform: translateY(-1px);
+    }
+
+    .option-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-right: 16px;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      margin-top: 2px;
+    }
+
+    .option-text {
+      font-size: 0.95rem;
+      color: var(--text-main);
+      font-weight: 500;
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    /* Fórmulas do MathJax podem ser mais largas que a alternativa: em vez de
+       "estourar" para fora do card, a fórmula ganha rolagem horizontal
+       própria só quando necessário. */
+    .option-text mjx-container,
+    .question-statement mjx-container,
+    .explanation-box mjx-container {
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      display: inline-block !important;
+      vertical-align: middle;
+    }
+
+    .option-row.selected {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.08);
+    }
+    .option-row.selected .option-circle {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .option-row.correct {
+      border-color: var(--success);
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .option-row.correct .option-circle {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    .option-row.wrong {
+      border-color: var(--danger);
+      background: rgba(239, 68, 68, 0.08);
+    }
+    .option-row.wrong .option-circle {
+      background: var(--danger);
+      border-color: var(--danger);
+      color: white;
+    }
+
+    .explanation-box {
+      display: none;
+      padding: 22px 26px;
+      border-radius: 16px;
+      background: var(--card-subtle-bg);
+      border-left: 5px solid var(--primary);
+      margin-bottom: 32px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text-main);
+      max-width: 100%;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .bottom-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-arrow {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s;
+    }
+
+    .btn-arrow:hover:not(:disabled) { color: var(--primary); }
+    .btn-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .btn-submit-main {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 38px;
+      border-radius: 30px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-submit-main:hover:not(:disabled) {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-submit-main:disabled {
+      background: var(--border-color);
+      color: var(--text-muted);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal-card {
+      background: var(--card-bg);
+      border-radius: 24px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 32px;
+      box-shadow: 0 20px 40px var(--shadow-color);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .history-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .history-item {
+      padding: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      background: var(--input-bg);
+      transition: background 0.2s;
+    }
+
+    .history-item:hover { background: var(--card-subtle-bg); }
+  </style>
+
+<style>
+  /* AJUSTES GERAIS PARA RODAR COMO APP (WebIntoApp / WebView) */
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  * {
+    box-sizing: border-box;
+    min-width: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  img, canvas, svg, video, iframe { max-width: 100%; height: auto; }
+
+  /* Quebra de texto SUAVE: só quebra no meio de uma palavra se ela realmente
+     não couber. Isso evita nomes/e-mails "picotados" letra a letra. */
+  h1, h2, h3, h4, p, span, div {
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  button, input, select, textarea {
+    max-width: 100%;
+    touch-action: manipulation; /* evita delay de 300ms e double-tap zoom nos botões */
+  }
+
+  /* Nome e e-mail do usuário: nunca deixar quebrar letra a letra */
+  .user-header .name,
+  .user-header .email {
+    word-break: normal;
+    overflow-wrap: break-word;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  /* ===================== TABLET / MOBILE GRANDE ===================== */
+  @media (max-width: 768px) {
+    body { overflow-x: hidden; }
+
+    .navbar {
+      padding: 12px 16px;
+      padding-top: max(12px, env(safe-area-inset-top));
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+    }
+    .brand { font-size: 1.05rem; }
+
+    .screen { margin: 20px auto; padding: 0 14px; }
+
+    .auth-card { padding: 30px 24px; margin: 30px auto; width: 100%; }
+
+    .container-questoes { padding: 22px 18px; }
+
+    .top-header { flex-direction: column; align-items: stretch; }
+    .search-filters-bar { width: 100%; }
+    .search-input-wrapper { flex: 1 1 auto; }
+    .search-input { width: 100%; }
+    .select-dificuldade { flex: 1 1 auto; }
+
+    .question-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .topic-title { font-size: 1.1rem; }
+
+    .modal-card { width: 92%; padding: 22px; }
+  }
+
+  /* ===================== CELULAR ===================== */
+  @media (max-width: 480px) {
+    .navbar {
+      padding: 10px 12px;
+      padding-top: max(10px, env(safe-area-inset-top));
+      padding-left: max(12px, env(safe-area-inset-left));
+      padding-right: max(12px, env(safe-area-inset-right));
+      flex-wrap: nowrap;
+    }
+    .brand {
+      font-size: 0.92rem;
+      gap: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nav-actions { gap: 8px; }
+    .theme-toggle-btn {
+      padding: 7px 10px;
+      font-size: 0.75rem;
+    }
+    .avatar-btn { width: 38px; height: 38px; font-size: 1rem; }
+
+    /* Menu de perfil: nunca deixar estourar a largura da tela */
+    .dropdown-menu {
+      width: min(290px, calc(100vw - 24px));
+      right: -8px;
+      top: 50px;
+    }
+
+    .auth-card { padding: 26px 18px; border-radius: 18px; }
+    .container-questoes { padding: 18px 14px; border-radius: 18px; }
+
+    .header-title { font-size: 1.05rem; }
+    .header-subtitle { font-size: 0.8rem; }
+
+    .search-input, .select-dificuldade, .btn-filter { font-size: 0.85rem; }
+
+    .topic-title { font-size: 1rem; }
+    .badge-counter, .badge-source { font-size: 0.72rem; padding: 5px 10px; }
+
+    .question-statement { font-size: 0.98rem; }
+
+    .option-row { padding: 14px 14px; }
+    .option-text { font-size: 0.9rem; }
+
+    .bottom-nav { flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .btn-submit-main { order: -1; width: 100%; }
+    .btn-arrow { flex: 1 1 auto; justify-content: center; }
+  }
+</style>
+<script>
+window.addEventListener('load',()=>{
+ document.documentElement.style.overflowX='hidden';
+ if(window.MathJax&&MathJax.typesetPromise){MathJax.typesetPromise().catch(()=>{});}
+});
+</script>
+</head>
+<body>
+
+  <!-- CANVAS DA ANIMAÇÃO DE FÍSICA -->
+  <canvas id="physics-canvas"></canvas>
+
+  <nav class="navbar">
+    <div class="brand"> ⚛️ FÍSICA EM DIA</div>
+    
+    <div class="nav-actions">
+      <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-btn">
+        🌙 Modo Escuro
+      </button>
+
+      <div class="profile-area" id="profile-area" style="display: none;">
+        <div class="avatar-btn" id="avatar-initials" onclick="toggleDropdown()">U</div>
+        
+        <div class="dropdown-menu" id="dropdown-menu">
+          <div class="user-header">
+            <div class="name" id="user-display-name">Nome do Aluno</div>
+            <div class="email" id="user-display-email">email@aluno.com</div>
+          </div>
+          
+          <div class="stats-summary">
+            <div class="stat-item">
+              <div class="val" id="stat-solved">0</div>
+              <div class="lbl">Feitas</div>
+            </div>
+            <div class="stat-item">
+              <div class="val" id="stat-accuracy" style="color: var(--primary);">0%</div>
+              <div class="lbl">Acertos</div>
+            </div>
+          </div>
+
+          <div class="dropdown-item" onclick="openHistoryModal()">
+            <span>📋 Ver Histórico de Resoluções</span>
+            <span>→</span>
+          </div>
+          <div class="dropdown-item logout" onclick="logout()">Sair</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="screen active" id="screen-auth">
+    <div class="auth-card">
+      <h2 style="color: var(--primary); margin-bottom: 8px; font-weight: 800;">Área do Aluno</h2>
+      <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.9rem;">Insira seus dados para acessar o banco de questões.</p>
+      
+      <form onsubmit="registerUser(event)">
+        <input type="text" id="input-name" class="input-field" placeholder="Seu Nome Completo" required>
+        <input type="email" id="input-email" class="input-field" placeholder="Seu E-mail" required>
+
+        <button type="submit" id="btn-login-action" class="btn-submit-user"> LOGIN </button>
+        <div id="login-error" class="error-msg">Acesso negado. Seu e-mail não possui autorização.</div>
+      </form>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-quiz">
+    <div class="container-questoes">
+
+      <div class="top-header">
+        <div class="header-title-area">
+          <div class="header-title">
+            <span style="color: var(--primary);">🔍</span> BANCO DE QUESTÕES
+          </div>
+          <div class="header-subtitle">
+            Filtre por termo ou selecione o nível desejado para praticar.
+          </div>
+        </div>
+
+        <div class="search-filters-bar">
+          <div class="search-input-wrapper">
+            <input type="text" id="input-search" class="search-input" placeholder="Buscar assunto ou texto..." onkeypress="handleKeyPress(event)">
+            <span class="search-icon">🔍</span>
+          </div>
+
+          <select id="select-dificuldade" class="select-dificuldade" onchange="filterQuestions()">
+            <option value="todos">Todos os Níveis</option>
+            <option value="facil">🟢 Fácil</option>
+            <option value="medio">🟡 Médio</option>
+            <option value="dificil">🔴 Difícil</option>
+          </select>
+
+          <button class="btn-filter" onclick="filterQuestions()">Filtrar</button>
+        </div>
+      </div>
+
+      <div class="question-header">
+        <h2 class="topic-title" id="topic-display">Todas as Questões</h2>
+        <div class="meta-badges">
+          <span class="badge-counter" id="badge-counter">Questão 1 de 1</span>
+          <span class="badge-source" id="badge-source">-</span>
+        </div>
+      </div>
+
+      <div class="question-info-bar">
+        <span class="tag-info tag-assunto" id="tag-assunto-display">📌 Assunto</span>
+        <span class="tag-info" id="tag-nivel-display">⚡ Nível</span>
+      </div>
+
+      <div class="question-statement" id="question-text">
+        Carregando questão...
+      </div>
+
+      <div class="options-container" id="options-container"></div>
+
+      <div class="explanation-box" id="explanation-box">
+        <strong id="explanation-status"></strong>
+        <div id="explanation-text" style="margin-top: 8px;"></div>
+      </div>
+
+      <div class="bottom-nav">
+        <button class="btn-arrow" id="btn-prev" onclick="prevQuestion()">
+          ‹ Anterior
+        </button>
+
+        <button class="btn-submit-main" id="btn-submit" onclick="submitAnswer()" disabled>
+          Enviar Resposta
+        </button>
+
+        <button class="btn-arrow" id="btn-next" onclick="nextQuestion()">
+          Próxima ›
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-history">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-weight: 800; color: var(--text-main);">Histórico de Resoluções</h3>
+        <button onclick="closeHistoryModal()" style="border:none; background:none; cursor:pointer; font-size: 1.3rem; color: var(--text-muted);">✕</button>
+      </div>
+      <div class="history-list" id="history-list-container"></div>
+    </div>
+  </div>
+
+  <script>
+    // ANIMAÇÃO DE FUNDO: SIMULAÇÃO DE PARTÍCULAS
+    const canvas = document.getElementById('physics-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.8;
+        this.vy = (Math.random() - 0.5) * 0.8;
+        this.radius = Math.random() * 2.5 + 1;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+      }
+
+      draw() {
+        const rgb = getComputedStyle(document.body).getPropertyValue('--particle-color').trim() || '37, 99, 235';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${rgb}, 0.6)`;
+        ctx.fill();
+      }
+    }
+
+    function initParticles() {
+      particles = [];
+      const count = Math.min(Math.floor((canvas.width * canvas.height) / 12000), 75);
+      for (let i = 0; i < count; i++) {
+        particles.push(new Particle());
+      }
+    }
+    initParticles();
+
+    function animatePhysics() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const rgb = getComputedStyle(document.body).getPropertyValue('--particle-color').trim() || '37, 99, 235';
+
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 130) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(${rgb}, ${1 - dist / 130})`;
+            ctx.lineWidth = 0.6;
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(animatePhysics);
+    }
+    animatePhysics();
+
+    // VARIÁVEIS E LÓGICA DA APLICAÇÃO
+    const URL_GET_QUESTOES = "https://script.google.com/macros/s/AKfycbzTMcv1KcWsxc2fz0yCuc_sK0uPJqUoU9oBbXrp75Ys5-h4Mb5_fAC3DhyTmDa6xuBt/exec";
+    const URL_POST_LOGINS = "https://script.google.com/macros/s/AKfycbzwjA5XN27VpxgjVWnxs5PDH9l2VIhmKW7ecpEvQbPf7YVFP3til4FvcVSB6BrrbFel/exec";
+
+    let currentUser = null;
+    let rawQuestions = [];
+    let filteredQuestions = [];
+    let currentIdx = 0;
+
+    let tempSelections = {};
+    let userStats = { total: 0, correct: 0, wrong: 0 };
+    let historyList = [];
+
+    // Embaralhamento (Fisher-Yates)
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      document.getElementById('theme-btn').innerText = isDark ? '☀️ Modo Claro' : '🌙 Modo Escuro';
+      localStorage.setItem('fisica_app_theme', isDark ? 'dark' : 'light');
+    }
+
+    function renderMath(targetElement) {
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise(targetElement ? [targetElement] : undefined)
+          .catch(err => console.log('Erro ao renderizar MathJax:', err));
+      }
+    }
+
+    window.onload = function() {
+      const savedTheme = localStorage.getItem('fisica_app_theme');
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('theme-btn').innerText = '☀️ Modo Claro';
+      }
+
+      const savedSession = sessionStorage.getItem('fisica_app_session');
+      if (savedSession) {
+        try {
+          const sessionData = JSON.parse(savedSession);
+          currentUser = sessionData.user;
+          setupUserSession();
+        } catch (e) {
+          sessionStorage.removeItem('fisica_app_session');
+        }
+      }
+    };
+
+    function registerUser(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('input-name').value.trim();
+      const email = document.getElementById('input-email').value.trim().toLowerCase();
+      const errorDiv = document.getElementById('login-error');
+      const btnSubmit = document.getElementById('btn-login-action');
+
+      errorDiv.style.display = 'none';
+      if (btnSubmit) {
+        btnSubmit.innerText = "Verificando acesso...";
+        btnSubmit.disabled = true;
+      }
+
+      const callbackName = 'handleLoginResponse_' + Math.round(100000 * Math.random());
+      
+      window[callbackName] = function(data) {
+        delete window[callbackName];
+        const scriptTag = document.getElementById(callbackName);
+        if (scriptTag) scriptTag.remove();
+
+        if (btnSubmit) {
+          btnSubmit.innerText = "LOGIN";
+          btnSubmit.disabled = false;
+        }
+
+        if (data.status === "bloqueado") {
+          errorDiv.innerText = data.mensagem || "Acesso negado: Este e-mail está bloqueado.";
+          errorDiv.style.display = 'block';
+        } else if (data.status === "sucesso") {
+          currentUser = { name, email };
+          saveUserSession();
+          setupUserSession();
+        } else {
+          errorDiv.innerText = "Erro ao processar acesso. Tente novamente.";
+          errorDiv.style.display = 'block';
+        }
+      };
+
+      const params = new URLSearchParams({
+        dataHora: new Date().toLocaleString("pt-BR"),
+        nome: name,
+        email: email,
+        evento: "Acesso do Usuário",
+        totalRespondidas: 0,
+        acertos: 0,
+        erros: 0,
+        callback: callbackName
+      });
+
+      const script = document.createElement('script');
+      script.id = callbackName;
+      script.src = `${URL_POST_LOGINS}?${params.toString()}`;
+      script.onerror = function() {
+        if (btnSubmit) {
+          btnSubmit.innerText = "LOGIN";
+          btnSubmit.disabled = false;
+        }
+        // Em modo offline, permite o acesso se já tiver algo no cache
+        if (!navigator.onLine && localStorage.getItem('fisica_app_questoes')) {
+          currentUser = { name, email };
+          saveUserSession();
+          setupUserSession();
+        } else {
+          errorDiv.innerText = "Erro de conexão ao verificar permissões.";
+          errorDiv.style.display = 'block';
+        }
+      };
+
+      document.body.appendChild(script);
+    }
+
+    function saveUserSession() {
+      sessionStorage.setItem('fisica_app_session', JSON.stringify({
+        user: currentUser
+      }));
+    }
+
+    function setupUserSession() {
+      document.getElementById('screen-auth').classList.remove('active');
+      document.getElementById('screen-quiz').classList.add('active');
+      document.getElementById('profile-area').style.display = 'block';
+
+      document.getElementById('avatar-initials').innerText = currentUser.name.charAt(0).toUpperCase();
+      document.getElementById('user-display-name').innerText = currentUser.name;
+      document.getElementById('user-display-email').innerText = currentUser.email;
+
+      const savedStats = localStorage.getItem(`stats_${currentUser.email}`);
+      userStats = savedStats ? JSON.parse(savedStats) : { total: 0, correct: 0, wrong: 0 };
+
+      const savedHistory = localStorage.getItem(`history_${currentUser.email}`);
+      historyList = savedHistory ? JSON.parse(savedHistory) : [];
+
+      updateUserStatsUI();
+      
+      // Inicializa as questões do dispositivo
+      initQuestionsData();
+      
+      // Envia evento se houver conexão
+      sendToSpreadsheet("Acesso do Usuário");
+    }
+
+    function logout() {
+      sessionStorage.removeItem('fisica_app_session');
+      location.reload();
+    }
+
+    function toggleDropdown() {
+      document.getElementById('dropdown-menu').classList.toggle('active');
+    }
+
+    window.onclick = function(e) {
+      if (!e.target.matches('.avatar-btn') && !e.target.closest('.dropdown-menu')) {
+        const dropdown = document.getElementById('dropdown-menu');
+        if (dropdown && dropdown.classList.contains('active')) {
+          dropdown.classList.remove('active');
+        }
+      }
+    };
+
+    // LÓGICA DE MEMÓRIA LOCAL E ATUALIZAÇÃO EM SEGUNDO PLANO
+    function initQuestionsData() {
+      const cached = localStorage.getItem('fisica_app_questoes');
+      
+      if (cached) {
+        try {
+          rawQuestions = JSON.parse(cached);
+          shuffleArray(rawQuestions);
+          filteredQuestions = [...rawQuestions];
+          showQuestion(0);
+        } catch (e) {
+          localStorage.removeItem('fisica_app_questoes');
+        }
+      }
+
+      // Baixa novos dados em segundo plano, sem interromper o usuário
+      syncBackgroundData();
+    }
+
+    function syncBackgroundData() {
+      if (!navigator.onLine) return; // Se estiver offline, ignora silenciosamente
+
+      fetch(URL_GET_QUESTOES)
+        .then(res => res.json())
+        .then(remoteQuestions => {
+          if (Array.isArray(remoteQuestions) && remoteQuestions.length > 0) {
+            
+            // Se ainda não tinha nada carregado localmente, exibe agora
+            if (rawQuestions.length === 0) {
+              rawQuestions = remoteQuestions;
+              shuffleArray(rawQuestions);
+              filteredQuestions = [...rawQuestions];
+              showQuestion(0);
+            } else {
+              // Sobrescreve/atualiza apenas a memória do dispositivo com novas questões
+              // As novidades ficarão disponíveis para a próxima vez que a pessoa abrir
+              rawQuestions = remoteQuestions;
+            }
+
+            // Salva a versão atualizada no dispositivo
+            localStorage.setItem('fisica_app_questoes', JSON.stringify(remoteQuestions));
+          }
+        })
+        .catch(err => console.log("Atualização em segundo plano não realizada (offline ou indisponível)."));
+    }
+
+    function handleKeyPress(e) {
+      if (e.key === 'Enter') filterQuestions();
+    }
+
+    function normalizeStr(str) {
+      return (str || '').toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    }
+
+    function filterQuestions() {
+      const query = normalizeStr(document.getElementById('input-search').value);
+      const diffFilter = document.getElementById('select-dificuldade').value;
+
+      filteredQuestions = rawQuestions.filter(q => {
+        const tema = normalizeStr(q.assunto || q.tema);
+        const fonte = normalizeStr(q.fonte);
+        const texto = normalizeStr(q.enunciado);
+        const explicacao = normalizeStr(q.explicacao);
+
+        const matchesText = !query || tema.includes(query) || fonte.includes(query) || texto.includes(query) || explicacao.includes(query);
+
+        const qNivel = normalizeStr(q.dificuldade || q.nivel);
+        let matchesDiff = true;
+
+        if (diffFilter === 'facil') matchesDiff = qNivel.includes('facil');
+        else if (diffFilter === 'medio') matchesDiff = qNivel.includes('medio');
+        else if (diffFilter === 'dificil') matchesDiff = qNivel.includes('dificil');
+
+        return matchesText && matchesDiff;
+      });
+
+      if (filteredQuestions.length > 0) {
+        showQuestion(0);
+      } else {
+        document.getElementById('topic-display').innerText = "Nenhum resultado";
+        document.getElementById('badge-counter').innerText = "0 de 0";
+        document.getElementById('badge-source').innerText = "-";
+        document.getElementById('tag-assunto-display').style.display = 'none';
+        document.getElementById('tag-nivel-display').style.display = 'none';
+        document.getElementById('question-text').innerText = "Nenhuma questão encontrada com os filtros selecionados.";
+        document.getElementById('options-container').innerHTML = '';
+        document.getElementById('btn-submit').disabled = true;
+        document.getElementById('explanation-box').style.display = 'none';
+      }
+    }
+
+    function showQuestion(idx) {
+      if (!filteredQuestions.length) return;
+      currentIdx = idx;
+      const q = filteredQuestions[idx];
+      const originalIndex = rawQuestions.indexOf(q);
+
+      const query = document.getElementById('input-search').value.trim();
+      document.getElementById('topic-display').innerText = query || (q.assunto || q.tema || "Todas as Questões");
+
+      document.getElementById('badge-counter').innerText = `Questão ${idx + 1} de ${filteredQuestions.length}`;
+      document.getElementById('badge-source').innerText = q.fonte || "GERAL";
+
+      const tagAssunto = document.getElementById('tag-assunto-display');
+      const assuntoNome = q.assunto || q.tema;
+      if (assuntoNome) {
+        tagAssunto.innerText = `📌 ${assuntoNome}`;
+        tagAssunto.style.display = 'inline-flex';
+      } else {
+        tagAssunto.style.display = 'none';
+      }
+
+      const tagNivel = document.getElementById('tag-nivel-display');
+      const nivel = normalizeStr(q.dificuldade || q.nivel);
+
+      tagNivel.className = 'tag-info';
+
+      if (nivel.includes('facil')) {
+        tagNivel.innerText = '🟢 Nível Fácil';
+        tagNivel.classList.add('tag-nivel-facil');
+        tagNivel.style.display = 'inline-flex';
+      } else if (nivel.includes('medio')) {
+        tagNivel.innerText = '🟡 Nível Médio';
+        tagNivel.classList.add('tag-nivel-medio');
+        tagNivel.style.display = 'inline-flex';
+      } else if (nivel.includes('dificil')) {
+        tagNivel.innerText = '🔴 Nível Difícil';
+        tagNivel.classList.add('tag-nivel-dificil');
+        tagNivel.style.display = 'inline-flex';
+      } else if (q.dificuldade || q.nivel) {
+        tagNivel.innerText = `⚡ ${q.dificuldade || q.nivel}`;
+        tagNivel.classList.add('tag-assunto');
+        tagNivel.style.display = 'inline-flex';
+      } else {
+        tagNivel.style.display = 'none';
+      }
+
+      document.getElementById('question-text').innerHTML = q.enunciado;
+
+      const optionsContainer = document.getElementById('options-container');
+      optionsContainer.innerHTML = '';
+
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+      const tempSel = tempSelections[originalIndex];
+
+      q.alternativas.forEach((optText, i) => {
+        const row = document.createElement('div');
+        row.className = 'option-row';
+
+        if (tempSel === i) {
+          row.classList.add('selected');
+        }
+        
+        row.onclick = () => selectTempOption(i, originalIndex);
+
+        row.innerHTML = `
+          <div class="option-circle">${letters[i]}</div>
+          <div class="option-text">${optText}</div>
+        `;
+
+        optionsContainer.appendChild(row);
+      });
+
+      const btnSubmit = document.getElementById('btn-submit');
+      btnSubmit.innerText = "Enviar Resposta";
+      btnSubmit.disabled = tempSel === undefined;
+
+      document.getElementById('explanation-box').style.display = 'none';
+
+      document.getElementById('btn-prev').disabled = idx === 0;
+      document.getElementById('btn-next').disabled = idx === filteredQuestions.length - 1;
+
+      renderMath(document.getElementById('screen-quiz'));
+    }
+
+    function selectTempOption(optionIdx, originalIdx) {
+      tempSelections[originalIdx] = optionIdx;
+      showQuestion(currentIdx);
+    }
+
+    function submitAnswer() {
+      const q = filteredQuestions[currentIdx];
+      const originalIndex = rawQuestions.indexOf(q);
+      const selectedIndex = tempSelections[originalIndex];
+
+      if (selectedIndex === undefined) return;
+
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+      let isCorrect = false;
+
+      if (typeof q.correta === 'number') isCorrect = selectedIndex === q.correta;
+      else if (typeof q.correta === 'string') isCorrect = letters[selectedIndex] === q.correta.trim().toUpperCase();
+
+      const optionRows = document.querySelectorAll('.option-row');
+      optionRows.forEach((row, i) => {
+        row.classList.remove('selected', 'correct', 'wrong');
+        if (i === selectedIndex) {
+          row.classList.add(isCorrect ? 'correct' : 'wrong');
+        }
+      });
+
+      const expBox = document.getElementById('explanation-box');
+      document.getElementById('explanation-status').innerHTML = isCorrect 
+        ? `<span style="color: var(--success)">Parabéns! Você acertou! 🎉</span>` 
+        : `<span style="color: var(--danger)">Resposta incorreta.</span> Gabarito correto: ${typeof q.correta === 'string' ? q.correta : letters[q.correta]}`;
+      
+      document.getElementById('explanation-text').innerHTML = q.explicacao || "Sem explicação disponível para esta questão.";
+      expBox.style.display = 'block';
+
+      renderMath(expBox);
+
+      userStats.total++;
+      if (isCorrect) userStats.correct++;
+      else userStats.wrong++;
+
+      localStorage.setItem(`stats_${currentUser.email}`, JSON.stringify(userStats));
+
+      historyList.unshift({
+        qIndex: originalIndex,
+        tema: q.assunto || q.tema || 'Física',
+        enunciado: q.enunciado.replace(/<[^>]*>?/gm, '').substring(0, 50),
+        isCorrect: isCorrect,
+        dataHora: new Date().toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })
+      });
+
+      localStorage.setItem(`history_${currentUser.email}`, JSON.stringify(historyList));
+
+      updateUserStatsUI();
+      sendToSpreadsheet("Resposta de Questão");
+    }
+
+    function updateUserStatsUI() {
+      const acc = userStats.total > 0 ? Math.round((userStats.correct / userStats.total) * 100) : 0;
+      document.getElementById('stat-solved').innerText = userStats.total;
+      document.getElementById('stat-accuracy').innerText = `${acc}%`;
+    }
+
+    function sendToSpreadsheet(eventType) {
+      if (!URL_POST_LOGINS || !navigator.onLine) return;
+
+      fetch(URL_POST_LOGINS, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dataHora: new Date().toLocaleString("pt-BR"),
+          nome: currentUser.name,
+          email: currentUser.email,
+          evento: eventType,
+          totalRespondidas: userStats.total,
+          acertos: userStats.correct,
+          erros: userStats.wrong
+        })
+      }).catch(err => console.log("Sem conexão no momento para enviar log."));
+    }
+
+    function openHistoryModal() {
+      const container = document.getElementById('history-list-container');
+      container.innerHTML = '';
+
+      if (!historyList.length) {
+        container.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 20px;">Você ainda não respondeu nenhuma questão.</p>`;
+      } else {
+        historyList.forEach((item) => {
+          const div = document.createElement('div');
+          div.className = 'history-item';
+          
+          div.innerHTML = `
+            <div>
+              <strong style="color: var(--text-main);">${item.tema}</strong>
+              <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">${item.enunciado}... (${item.dataHora})</div>
+            </div>
+            <span style="font-weight: 700; font-size: 0.88rem; color: ${item.isCorrect ? 'var(--success)' : 'var(--danger)'}">
+              ${item.isCorrect ? 'Acertou' : 'Errou'}
+            </span>
+          `;
+          div.onclick = () => {
+            closeHistoryModal();
+            document.getElementById('input-search').value = '';
+            document.getElementById('select-dificuldade').value = 'todos';
+            filteredQuestions = [...rawQuestions];
+            showQuestion(item.qIndex);
+          };
+          container.appendChild(div);
+        });
+      }
+
+      document.getElementById('modal-history').classList.add('active');
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('modal-history').classList.remove('active');
+    }
+
+    function nextQuestion() {
+      if (currentIdx < filteredQuestions.length - 1) showQuestion(currentIdx + 1);
+    }
+
+    function prevQuestion() {
+      if (currentIdx > 0) showQuestion(currentIdx - 1);
+    }
+  </script>
+</body>
+</html>
