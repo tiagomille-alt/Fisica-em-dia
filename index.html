@@ -288,6 +288,9 @@
       border: 1px solid var(--border-color);
       box-shadow: 0 10px 30px -10px var(--shadow-color);
       backdrop-filter: blur(16px);
+      max-width: 100%;
+      overflow-x: hidden;
+      box-sizing: border-box;
     }
 
     .top-header {
@@ -477,6 +480,9 @@
       font-weight: 500;
       color: var(--text-main);
       margin-bottom: 30px;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      max-width: 100%;
     }
 
     .options-container {
@@ -524,6 +530,10 @@
       font-size: 0.95rem;
       color: var(--text-main);
       font-weight: 500;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      min-width: 0;
+      flex: 1;
     }
 
     .option-row.selected {
@@ -566,6 +576,22 @@
       font-size: 0.95rem;
       line-height: 1.6;
       color: var(--text-main);
+      overflow-wrap: break-word;
+      word-break: break-word;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    .explanation-box img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Impede que fórmulas do MathJax estourem a largura da tela no celular */
+    mjx-container {
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
     }
 
     .bottom-nav {
@@ -807,6 +833,12 @@
         padding: 16px 18px;
         font-size: 0.88rem;
         margin-bottom: 24px;
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      .container-questoes {
+        padding: 20px 16px;
       }
 
       .bottom-nav {
