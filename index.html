@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FÍSICA EM DIA</title>
+  <title>ESTUDO EM DIA</title>
   
   <!-- Configuração do MathJax v3 -->
   <script>
@@ -890,11 +890,11 @@
   <canvas id="physics-canvas"></canvas>
 
   <nav class="navbar">
-    <div class="brand"> ⚛️ FÍSICA EM DIA</div>
+    <div class="brand"> 📚 ESTUDO EM DIA</div>
     
     <div class="nav-actions">
       <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-btn">
-        🌙 Modo Escuro
+        🌕
       </button>
 
       <div class="profile-area" id="profile-area" style="display: none;">
@@ -1123,7 +1123,7 @@
     function toggleTheme() {
       document.body.classList.toggle('dark-mode');
       const isDark = document.body.classList.contains('dark-mode');
-      document.getElementById('theme-btn').innerText = isDark ? '☀️ Modo Claro' : '🌙 Modo Escuro';
+      document.getElementById('theme-btn').innerText = isDark ? '☀️ Modo Claro' : '🌕 Modo Escuro';
       localStorage.setItem('fisica_app_theme', isDark ? 'dark' : 'light');
     }
 
