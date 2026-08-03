@@ -890,7 +890,7 @@
   <canvas id="physics-canvas"></canvas>
 
   <nav class="navbar">
-    <div class="brand"> 📚 ESTUDO EM DIA</div>
+    <div class="brand"> 📘 ESTUDO EM DIA</div>
     
     <div class="nav-actions">
       <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-btn">
@@ -1123,7 +1123,7 @@
     function toggleTheme() {
       document.body.classList.toggle('dark-mode');
       const isDark = document.body.classList.contains('dark-mode');
-      document.getElementById('theme-btn').innerText = isDark ? '☀️ Modo Claro' : '🌕 Modo Escuro';
+      document.getElementById('theme-btn').innerText = isDark ? '☀️' : '🌕';
       localStorage.setItem('fisica_app_theme', isDark ? 'dark' : 'light');
     }
 
@@ -1138,7 +1138,7 @@
       const savedTheme = localStorage.getItem('fisica_app_theme');
       if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
-        document.getElementById('theme-btn').innerText = '☀️ Modo Claro';
+        document.getElementById('theme-btn').innerText = '☀️';
       }
 
       const savedSession = sessionStorage.getItem('fisica_app_session');
