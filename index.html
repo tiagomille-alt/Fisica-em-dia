@@ -959,6 +959,16 @@
             <span class="search-icon">🔍</span>
           </div>
 
+          <!-- NOVO SELETOR DE DISCIPLINA -->
+          <select id="select-disciplina" class="select-dificuldade" onchange="filterQuestions()">
+            <option value="todas">Todas as Disciplinas</option>
+            <option value="fisica">Física</option>
+            <option value="quimica">Química</option>
+            <option value="biologia">Biologia</option>
+            <option value="matematica">Matemática</option>
+          </select>
+          <!-- FIM DO NOVO SELETOR -->
+
           <select id="select-dificuldade" class="select-dificuldade" onchange="filterQuestions()">
             <option value="todos">Todos os Níveis</option>
             <option value="facil">🟢 Fácil</option>
@@ -1109,72 +1119,79 @@
     let userStats = { total: 0, correct: 0, wrong: 0 };
     let historyList = [];
 
+    // FUNÇÃO DE SEGURANÇA PARA BARRAR QUESTÕES CORROMPIDAS DO FINAL DO ARQUIVO
+    function isQuestionValid(q) {
+      if (!q || !q.enunciado) return false;
+      if (!Array.isArray(q.alternativas) || q.alternativas.length === 0) return false;
+      if (q.enunciado.includes("[TAG:") || q.enunciado.includes("[ENUNCIADO:")) return false;
+      return true;
+    }
+
     /**
      * FUNÇÃO DE SANITIZAÇÃO E FORMATAÇÃO DE CONTEÚDO
      * Normaliza LaTeX, trata raízes "sqrt", quebras de linha e extrai imagens Base64/URLs.
      */
     function formatAndSanitizeContent(content) {
-  if (!content) return '';
-  let str = content.toString().trim();
+      if (!content) return '';
+      let str = content.toString().trim();
 
-  // 1. Tratamento de Imagem Isolada
-  if (str.match(/^https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i)) {
-    return `<img src="${str}" alt="Imagem da questão">`;
-  }
-  if (str.startsWith('data:image/') || (str.length > 200 && str.match(/^[A-Za-z0-9+/=]+$/))) {
-    const src = str.startsWith('data:image/') ? str : `data:image/png;base64,${str}`;
-    return `<img src="${src}" alt="Imagem da questão">`;
-  }
-
-  // 2. Se for um objeto JSON encapsulado
-  if (str.startsWith('{') && str.endsWith('}')) {
-    try {
-      const parsed = JSON.parse(str);
-      if (parsed.imagem) {
-        const src = parsed.imagem.startsWith('data:image/') ? parsed.imagem : `data:image/png;base64,${parsed.imagem}`;
+      // 1. Tratamento de Imagem Isolada
+      if (str.match(/^https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i)) {
+        return `<img src="${str}" alt="Imagem da questão">`;
+      }
+      if (str.startsWith('data:image/') || (str.length > 200 && str.match(/^[A-Za-z0-9+/=]+$/))) {
+        const src = str.startsWith('data:image/') ? str : `data:image/png;base64,${str}`;
         return `<img src="${src}" alt="Imagem da questão">`;
       }
-    } catch (e) {}
-  }
 
-  // 3. PROTEGER O SÍMBOLO DE MOEDA (R$)
-  str = str.replace(/R\$/g, '___R_DOLLAR___');
+      // 2. Se for um objeto JSON encapsulado
+      if (str.startsWith('{') && str.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(str);
+          if (parsed.imagem) {
+            const src = parsed.imagem.startsWith('data:image/') ? parsed.imagem : `data:image/png;base64,${parsed.imagem}`;
+            return `<img src="${src}" alt="Imagem da questão">`;
+          }
+        } catch (e) {}
+      }
 
-  // 4. Normalização de comandos Math e barras invertidas
-  str = str.replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}');
-  str = str.replace(/\bsen\b/g, '\\sin');
-  str = str.replace(/\\+/g, '\\'); 
+      // 3. PROTEGER O SÍMBOLO DE MOEDA (R$)
+      str = str.replace(/R\$/g, '___R_DOLLAR___');
 
-  // 5. CORRIGIR ALTERNATIVAS QUEBRADAS COM SEGURANÇA
-  if (str.match(/^[^$]+\$\$$/)) {
-      str = '$$' + str;
-  } else if (str.match(/^[^$]+\$$/)) {
-      str = '$' + str;
-  }
+      // 4. Normalização de comandos Math e barras invertidas
+      str = str.replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}');
+      str = str.replace(/\bsen\b/g, '\\sin');
+      str = str.replace(/\\+/g, '\\'); 
 
-  // 6. LIMPEZA DE COLCHETES SOBRANDOS (A NOVA REGRA)
-  // Conta os colchetes. Só remove o último caractere se for um ']' sem par e estiver no final da string.
-  const openBrackets = (str.match(/\[/g) || []).length;
-  const closeBrackets = (str.match(/\]/g) || []).length;
-  if (closeBrackets > openBrackets && str.endsWith(']')) {
-      str = str.slice(0, -1);
-  }
+      // 5. CORRIGIR ALTERNATIVAS QUEBRADAS COM SEGURANÇA
+      if (str.match(/^[^$]+\$\$$/)) {
+          str = '$$' + str;
+      } else if (str.match(/^[^$]+\$$/)) {
+          str = '$' + str;
+      }
 
-  // 7. ENVELOPAMENTO INTELIGENTE
-  if (!str.includes('$') && !str.includes('\\(')) {
-    str = str.replace(/([0-9.,]*\s*)?(\\operatorname|\\sin|\\cos|\\tan|\\sqrt|\\frac|\\degree|\\circ)(\([^)]*\)|\{[^}]*\}|[0-9°]+|\s|=|\\approx|\\-|[0-9.,/]+)+/g, function(match) {
-      return `\\( ${match.trim()} \\)`;
-    });
-  }
+      // 6. LIMPEZA DE COLCHETES SOBRANDOS
+      const openBrackets = (str.match(/\[/g) || []).length;
+      const closeBrackets = (str.match(/\]/g) || []).length;
+      if (closeBrackets > openBrackets && str.endsWith(']')) {
+          str = str.slice(0, -1);
+      }
 
-  // 8. RESTAURAR O R$ INVISÍVEL AO MATHJAX
-  str = str.replace(/___R_DOLLAR___/g, 'R<span class="tex2jax_ignore mathjax_ignore">$</span>');
+      // 7. ENVELOPAMENTO INTELIGENTE
+      if (!str.includes('$') && !str.includes('\\(')) {
+        str = str.replace(/([0-9.,]*\s*)?(\\operatorname|\\sin|\\cos|\\tan|\\sqrt|\\frac|\\degree|\\circ)(\([^)]*\)|\{[^}]*\}|[0-9°]+|\s|=|\\approx|\\-|[0-9.,/]+)+/g, function(match) {
+          return `\\( ${match.trim()} \\)`;
+        });
+      }
 
-  // 9. Converter quebras de linha reais para <br> no HTML
-  str = str.replace(/\r?\n/g, '<br>');
+      // 8. RESTAURAR O R$ INVISÍVEL AO MATHJAX
+      str = str.replace(/___R_DOLLAR___/g, 'R<span class="tex2jax_ignore mathjax_ignore">$</span>');
 
-  return str;
-}
+      // 9. Converter quebras de linha reais para <br> no HTML
+      str = str.replace(/\r?\n/g, '<br>');
+
+      return str;
+    }
 
     // Embaralhamento (Fisher-Yates)
     function shuffleArray(array) {
@@ -1338,7 +1355,8 @@
       
       if (cached) {
         try {
-          rawQuestions = JSON.parse(cached);
+          const parsed = JSON.parse(cached);
+          rawQuestions = parsed.filter(isQuestionValid); // APLICA O FILTRO DE SEGURANÇA
           shuffleArray(rawQuestions);
           filteredQuestions = [...rawQuestions];
           showQuestion(0);
@@ -1357,16 +1375,19 @@
         .then(res => res.json())
         .then(remoteQuestions => {
           if (Array.isArray(remoteQuestions) && remoteQuestions.length > 0) {
+            
+            const validQuestions = remoteQuestions.filter(isQuestionValid); // APLICA O FILTRO DE SEGURANÇA
+
             if (rawQuestions.length === 0) {
-              rawQuestions = remoteQuestions;
+              rawQuestions = validQuestions;
               shuffleArray(rawQuestions);
               filteredQuestions = [...rawQuestions];
               showQuestion(0);
             } else {
-              rawQuestions = remoteQuestions;
+              rawQuestions = validQuestions;
             }
 
-            localStorage.setItem('fisica_app_questoes', JSON.stringify(remoteQuestions));
+            localStorage.setItem('fisica_app_questoes', JSON.stringify(validQuestions));
           }
         })
         .catch(err => console.log("Atualização em segundo plano indisponível."));
@@ -1383,15 +1404,17 @@
     function filterQuestions() {
       const query = normalizeStr(document.getElementById('input-search').value);
       const diffFilter = document.getElementById('select-dificuldade').value;
+      const discFilter = document.getElementById('select-disciplina').value; // PEGA O NOVO FILTRO DE DISCIPLINA
 
       filteredQuestions = rawQuestions.filter(q => {
-        const tema = normalizeStr(q.assunto || q.tema);
+        const tema = normalizeStr(q.assunto || q.tema || q.tag || "");
         const fonte = normalizeStr(q.fonte);
         const texto = normalizeStr(q.enunciado);
         const explicacao = normalizeStr(q.explicacao);
 
         const matchesText = !query || tema.includes(query) || fonte.includes(query) || texto.includes(query) || explicacao.includes(query);
 
+        // Filtro de Dificuldade
         const qNivel = normalizeStr(q.dificuldade || q.nivel);
         let matchesDiff = true;
 
@@ -1399,7 +1422,13 @@
         else if (diffFilter === 'medio') matchesDiff = qNivel.includes('medio');
         else if (diffFilter === 'dificil') matchesDiff = qNivel.includes('dificil');
 
-        return matchesText && matchesDiff;
+        // Filtro de Disciplina
+        let matchesDisc = true;
+        if (discFilter !== 'todas') {
+          matchesDisc = tema.includes(discFilter);
+        }
+
+        return matchesText && matchesDiff && matchesDisc;
       });
 
       if (filteredQuestions.length > 0) {
