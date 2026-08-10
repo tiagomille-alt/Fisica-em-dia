@@ -341,7 +341,7 @@
       border-radius: 14px;
       font-size: 0.88rem;
       outline: none;
-      width: 220px;
+      width: 200px;
       transition: all 0.2s;
       background: var(--input-bg);
       color: var(--text-main);
@@ -391,6 +391,32 @@
 
     .btn-filter:hover { background: var(--primary-hover); transform: translateY(-1px); }
 
+    /* ESTILO DO BOTÃO DE FILTRAR FAVORITAS */
+    .btn-fav-filter {
+      background: var(--card-subtle-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 10px 16px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-fav-filter:hover {
+      border-color: var(--warning);
+    }
+
+    .btn-fav-filter.active {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: var(--warning);
+      color: var(--warning);
+    }
+
     .question-header {
       display: flex;
       justify-content: space-between;
@@ -398,6 +424,24 @@
       margin-top: 10px;
       margin-bottom: 20px;
     }
+
+    .topic-title-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-bookmark {
+      background: none;
+      border: none;
+      font-size: 1.6rem;
+      cursor: pointer;
+      transition: transform 0.2s ease, color 0.2s ease;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .btn-bookmark:hover { transform: scale(1.25); }
 
     .topic-title {
       font-size: 1.45rem;
@@ -773,9 +817,11 @@
       }
 
       .select-dificuldade,
-      .btn-filter {
+      .btn-filter,
+      .btn-fav-filter {
         width: 100%;
         text-align: center;
+        justify-content: center;
       }
 
       .question-header {
@@ -914,6 +960,10 @@
               <div class="val" id="stat-accuracy" style="color: var(--primary);">0%</div>
               <div class="lbl">Acertos</div>
             </div>
+            <div class="stat-item">
+              <div class="val" id="stat-favs" style="color: var(--warning);">0</div>
+              <div class="lbl">Salvas</div>
+            </div>
           </div>
 
           <div class="dropdown-item" onclick="openHistoryModal()">
@@ -929,14 +979,14 @@
   <div class="screen active" id="screen-auth">
     <div class="auth-card">
       <h2 style="color: var(--primary); margin-bottom: 8px; font-weight: 800;">Área do Aluno</h2>
-      <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.9rem;">Insira seus dados para acessar o banco de questões.</p>
+      <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.9rem;">Insira seu nome e e-mail para acessar.</p>
       
       <form onsubmit="registerUser(event)">
         <input type="text" id="input-name" class="input-field" placeholder="Seu Nome Completo" required>
         <input type="email" id="input-email" class="input-field" placeholder="Seu E-mail" required>
 
         <button type="submit" id="btn-login-action" class="btn-submit-user"> LOGIN </button>
-        <div id="login-error" class="error-msg">Acesso negado. Seu e-mail não possui autorização.</div>
+        <div id="login-error" class="error-msg">Acesso negado. Credenciais inválidas.</div>
       </form>
     </div>
   </div>
@@ -950,7 +1000,7 @@
             <span style="color: var(--primary);">🔍</span> BANCO DE QUESTÕES
           </div>
           <div class="header-subtitle">
-            Filtre por termo ou selecione o nível desejado para praticar.
+            Filtre por termo, nível ou acesse suas questões salvas.
           </div>
         </div>
 
@@ -976,12 +1026,21 @@
             <option value="dificil">🔴 Difícil</option>
           </select>
 
+          <button class="btn-fav-filter" id="btn-toggle-favs" onclick="toggleOnlyFavsFilter()">
+            <span id="fav-star-icon">☆</span> Favoritas
+          </button>
+
           <button class="btn-filter" onclick="filterQuestions()">Filtrar</button>
         </div>
       </div>
 
       <div class="question-header">
-        <h2 class="topic-title" id="topic-display">Todas as Questões</h2>
+        <div class="topic-title-container">
+          <button class="btn-bookmark" id="btn-bookmark" onclick="toggleBookmarkCurrentQuestion()" title="Favoritar questão para revisar depois">
+            ☆
+          </button>
+          <h2 class="topic-title" id="topic-display">Todas as Questões</h2>
+        </div>
         <div class="meta-badges">
           <span class="badge-counter" id="badge-counter">Questão 1 de 1</span>
           <span class="badge-source" id="badge-source">-</span>
@@ -1118,6 +1177,15 @@
     let tempSelections = {};
     let userStats = { total: 0, correct: 0, wrong: 0 };
     let historyList = [];
+    let favoriteIds = new Set();
+    let filterOnlyFavs = false;
+
+    // GERADOR DE ID ÚNICO DE QUESTÃO
+    function getQuestionId(q) {
+      if (q.id) return q.id.toString();
+      if (q.enunciado) return q.enunciado.substring(0, 45).replace(/\s+/g, '');
+      return Math.random().toString();
+    }
 
     // FUNÇÃO DE FORMATAÇÃO PARA SLUGS E TEXTOS COM HÍFEN
     function formatTopicText(str) {
@@ -1125,7 +1193,6 @@
       const text = str.toString().trim();
       if (!text.includes('-')) return text;
 
-      // Mapeamento de acentuações para palavras comuns de tópicos
       const accentMap = {
         'quimica': 'Química',
         'inorganica': 'Inorgânica',
@@ -1152,7 +1219,7 @@
         .join(' › ');
     }
 
-    // FUNÇÃO DE SEGURANÇA PARA BARRAR QUESTÕES CORROMPIDAS DO FINAL DO ARQUIVO
+    // FUNÇÃO DE SEGURANÇA PARA BARRAR QUESTÕES CORROMPIDAS
     function isQuestionValid(q) {
       if (!q || !q.enunciado) return false;
       if (!Array.isArray(q.alternativas) || q.alternativas.length === 0) return false;
@@ -1294,15 +1361,12 @@
           btnSubmit.disabled = false;
         }
 
-        if (data.status === "bloqueado") {
-          errorDiv.innerText = data.mensagem || "Acesso negado: Este e-mail está bloqueado.";
-          errorDiv.style.display = 'block';
-        } else if (data.status === "sucesso") {
+        if (data.status === "sucesso") {
           currentUser = { name, email };
           saveUserSession();
           setupUserSession();
         } else {
-          errorDiv.innerText = "Erro ao processar acesso. Tente novamente.";
+          errorDiv.innerText = data.mensagem || "Acesso negado. Verifique suas credenciais.";
           errorDiv.style.display = 'block';
         }
       };
@@ -1311,10 +1375,11 @@
         dataHora: new Date().toLocaleString("pt-BR"),
         nome: name,
         email: email,
-        evento: "Acesso do Usuário",
-        totalRespondidas: 0,
-        acertos: 0,
-        erros: 0,
+        evento: "Tentativa de Login",
+        totalRespondidas: userStats.total,
+        acertos: userStats.correct,
+        erros: userStats.wrong,
+        totalFavoritas: favoriteIds.size,
         callback: callbackName
       });
 
@@ -1331,7 +1396,7 @@
           saveUserSession();
           setupUserSession();
         } else {
-          errorDiv.innerText = "Erro de conexão ao verificar permissões.";
+          errorDiv.innerText = "Erro de conexão ao verificar servidor de autenticação.";
           errorDiv.style.display = 'block';
         }
       };
@@ -1359,6 +1424,9 @@
 
       const savedHistory = localStorage.getItem(`history_${currentUser.email}`);
       historyList = savedHistory ? JSON.parse(savedHistory) : [];
+
+      const savedFavs = localStorage.getItem(`favs_${currentUser.email}`);
+      favoriteIds = savedFavs ? new Set(JSON.parse(savedFavs)) : new Set();
 
       updateUserStatsUI();
       initQuestionsData();
@@ -1452,6 +1520,7 @@
       const discFilter = document.getElementById('select-disciplina').value;
 
       filteredQuestions = rawQuestions.filter(q => {
+        const qId = getQuestionId(q);
         const tema = normalizeStr(q.assunto || q.tema || q.tag || "");
         const fonte = normalizeStr(q.fonte);
         const texto = normalizeStr(q.enunciado);
@@ -1473,7 +1542,10 @@
           matchesDisc = tema.includes(discFilter);
         }
 
-        return matchesText && matchesDiff && matchesDisc;
+        // Filtro de Favoritas
+        const matchesFav = !filterOnlyFavs || favoriteIds.has(qId);
+
+        return matchesText && matchesDiff && matchesDisc && matchesFav;
       });
 
       if (filteredQuestions.length > 0) {
@@ -1491,6 +1563,38 @@
       }
     }
 
+    function toggleOnlyFavsFilter() {
+      filterOnlyFavs = !filterOnlyFavs;
+      const btn = document.getElementById('btn-toggle-favs');
+      const icon = document.getElementById('fav-star-icon');
+      
+      if (filterOnlyFavs) {
+        btn.classList.add('active');
+        icon.innerText = '★';
+      } else {
+        btn.classList.remove('active');
+        icon.innerText = '☆';
+      }
+      filterQuestions();
+    }
+
+    function toggleBookmarkCurrentQuestion() {
+      if (!filteredQuestions.length) return;
+      const q = filteredQuestions[currentIdx];
+      const qId = getQuestionId(q);
+
+      if (favoriteIds.has(qId)) {
+        favoriteIds.delete(qId);
+      } else {
+        favoriteIds.add(qId);
+      }
+
+      localStorage.setItem(`favs_${currentUser.email}`, JSON.stringify(Array.from(favoriteIds)));
+      updateUserStatsUI();
+      showQuestion(currentIdx);
+      sendToSpreadsheet("Atualização de Favorito");
+    }
+
     /**
      * RENDERIZAÇÃO DA QUESTÃO ATUAL NA TELA
      */
@@ -1498,6 +1602,7 @@
       if (!filteredQuestions.length) return;
       currentIdx = idx;
       const q = filteredQuestions[idx];
+      const qId = getQuestionId(q);
       const originalIndex = rawQuestions.indexOf(q);
 
       const query = document.getElementById('input-search').value.trim();
@@ -1506,6 +1611,16 @@
 
       document.getElementById('badge-counter').innerText = `Questão ${idx + 1} de ${filteredQuestions.length}`;
       document.getElementById('badge-source').innerText = q.fonte || "GERAL";
+
+      // Atualiza o Ícone de Favorito (Bookmark)
+      const btnBookmark = document.getElementById('btn-bookmark');
+      if (favoriteIds.has(qId)) {
+        btnBookmark.innerText = '★';
+        btnBookmark.style.color = 'var(--warning)';
+      } else {
+        btnBookmark.innerText = '☆';
+        btnBookmark.style.color = 'var(--text-muted)';
+      }
 
       const tagAssunto = document.getElementById('tag-assunto-display');
       const assuntoNome = q.assunto || q.tema;
@@ -1649,6 +1764,7 @@
       const acc = userStats.total > 0 ? Math.round((userStats.correct / userStats.total) * 100) : 0;
       document.getElementById('stat-solved').innerText = userStats.total;
       document.getElementById('stat-accuracy').innerText = `${acc}%`;
+      document.getElementById('stat-favs').innerText = favoriteIds.size;
     }
 
     function sendToSpreadsheet(eventType) {
@@ -1665,7 +1781,8 @@
           evento: eventType,
           totalRespondidas: userStats.total,
           acertos: userStats.correct,
-          erros: userStats.wrong
+          erros: userStats.wrong,
+          totalFavoritas: favoriteIds.size
         })
       }).catch(err => console.log("Sem conexão para enviar log."));
     }
