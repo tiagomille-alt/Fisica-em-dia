@@ -404,6 +404,7 @@
       font-weight: 800;
       color: var(--text-main);
       letter-spacing: -0.3px;
+      text-transform: capitalize;
     }
 
     .meta-badges {
@@ -959,7 +960,7 @@
             <span class="search-icon">🔍</span>
           </div>
 
-          <!-- NOVO SELETOR DE DISCIPLINA -->
+          <!-- SELETOR DE DISCIPLINA -->
           <select id="select-disciplina" class="select-dificuldade" onchange="filterQuestions()">
             <option value="todas">Todas as Disciplinas</option>
             <option value="fisica">Física</option>
@@ -967,7 +968,6 @@
             <option value="biologia">Biologia</option>
             <option value="matematica">Matemática</option>
           </select>
-          <!-- FIM DO NOVO SELETOR -->
 
           <select id="select-dificuldade" class="select-dificuldade" onchange="filterQuestions()">
             <option value="todos">Todos os Níveis</option>
@@ -1118,6 +1118,39 @@
     let tempSelections = {};
     let userStats = { total: 0, correct: 0, wrong: 0 };
     let historyList = [];
+
+    // FUNÇÃO DE FORMATAÇÃO PARA SLUGS E TEXTOS COM HÍFEN
+    function formatTopicText(str) {
+      if (!str) return '';
+      const text = str.toString().trim();
+      if (!text.includes('-')) return text;
+
+      // Mapeamento de acentuações para palavras comuns de tópicos
+      const accentMap = {
+        'quimica': 'Química',
+        'inorganica': 'Inorgânica',
+        'oxidos': 'Óxidos',
+        'fisica': 'Física',
+        'biologia': 'Biologia',
+        'matematica': 'Matemática',
+        'organica': 'Orgânica',
+        'eletrostatica': 'Eletrostática',
+        'termodinamica': 'Termodinâmica',
+        'cinematica': 'Cinemática',
+        'optica': 'Óptica',
+        'ondulatoria': 'Ondulatória'
+      };
+
+      return text
+        .split('-')
+        .filter(Boolean)
+        .map(word => {
+          const lower = word.toLowerCase();
+          if (accentMap[lower]) return accentMap[lower];
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        })
+        .join(' › ');
+    }
 
     // FUNÇÃO DE SEGURANÇA PARA BARRAR QUESTÕES CORROMPIDAS DO FINAL DO ARQUIVO
     function isQuestionValid(q) {
@@ -1356,7 +1389,7 @@
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
-          rawQuestions = parsed.filter(isQuestionValid); // APLICA O FILTRO DE SEGURANÇA
+          rawQuestions = parsed.filter(isQuestionValid);
           shuffleArray(rawQuestions);
           filteredQuestions = [...rawQuestions];
           showQuestion(0);
@@ -1368,6 +1401,7 @@
       syncBackgroundData();
     }
 
+    /* FUNÇÃO DE SINCRONIZAÇÃO EM SEGUNDO PLANO */
     function syncBackgroundData() {
       if (!navigator.onLine) return;
 
@@ -1376,7 +1410,7 @@
         .then(remoteQuestions => {
           if (Array.isArray(remoteQuestions) && remoteQuestions.length > 0) {
             
-            const validQuestions = remoteQuestions.filter(isQuestionValid); // APLICA O FILTRO DE SEGURANÇA
+            const validQuestions = remoteQuestions.filter(isQuestionValid);
 
             if (rawQuestions.length === 0) {
               rawQuestions = validQuestions;
@@ -1384,7 +1418,18 @@
               filteredQuestions = [...rawQuestions];
               showQuestion(0);
             } else {
+              const currentQuestion = filteredQuestions[currentIdx];
               rawQuestions = validQuestions;
+              filterQuestions();
+
+              if (currentQuestion) {
+                const preservedIdx = filteredQuestions.findIndex(q => q.enunciado === currentQuestion.enunciado);
+                if (preservedIdx !== -1) {
+                  currentIdx = preservedIdx;
+                }
+              }
+
+              showQuestion(currentIdx);
             }
 
             localStorage.setItem('fisica_app_questoes', JSON.stringify(validQuestions));
@@ -1404,7 +1449,7 @@
     function filterQuestions() {
       const query = normalizeStr(document.getElementById('input-search').value);
       const diffFilter = document.getElementById('select-dificuldade').value;
-      const discFilter = document.getElementById('select-disciplina').value; // PEGA O NOVO FILTRO DE DISCIPLINA
+      const discFilter = document.getElementById('select-disciplina').value;
 
       filteredQuestions = rawQuestions.filter(q => {
         const tema = normalizeStr(q.assunto || q.tema || q.tag || "");
@@ -1456,7 +1501,8 @@
       const originalIndex = rawQuestions.indexOf(q);
 
       const query = document.getElementById('input-search').value.trim();
-      document.getElementById('topic-display').innerText = query || (q.assunto || q.tema || "Todas as Questões");
+      const rawTopic = query || (q.assunto || q.tema || "Todas as Questões");
+      document.getElementById('topic-display').innerText = formatTopicText(rawTopic);
 
       document.getElementById('badge-counter').innerText = `Questão ${idx + 1} de ${filteredQuestions.length}`;
       document.getElementById('badge-source').innerText = q.fonte || "GERAL";
@@ -1464,7 +1510,7 @@
       const tagAssunto = document.getElementById('tag-assunto-display');
       const assuntoNome = q.assunto || q.tema;
       if (assuntoNome) {
-        tagAssunto.innerText = `📌 ${assuntoNome}`;
+        tagAssunto.innerText = `📌 ${formatTopicText(assuntoNome)}`;
         tagAssunto.style.display = 'inline-flex';
       } else {
         tagAssunto.style.display = 'none';
@@ -1498,7 +1544,6 @@
       // Monta e Sanitiza o Enunciado
       let statementHTML = formatAndSanitizeContent(q.enunciado);
       
-      // Se houver imagem separada no objeto
       if (q.imagem) {
         statementHTML += `<br>` + formatAndSanitizeContent(q.imagem);
       }
@@ -1541,7 +1586,6 @@
       document.getElementById('btn-prev').disabled = idx === 0;
       document.getElementById('btn-next').disabled = idx === filteredQuestions.length - 1;
 
-      // Executa o MathJax para transformar $...$ em equações formatadas
       renderMath(document.getElementById('screen-quiz'));
     }
 
@@ -1589,7 +1633,7 @@
 
       historyList.unshift({
         qIndex: originalIndex,
-        tema: q.assunto || q.tema || 'Física',
+        tema: formatTopicText(q.assunto || q.tema || 'Física'),
         enunciado: (q.enunciado || '').replace(/<[^>]*>?/gm, '').substring(0, 50),
         isCorrect: isCorrect,
         dataHora: new Date().toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })
